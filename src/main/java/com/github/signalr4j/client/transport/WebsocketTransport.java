@@ -24,6 +24,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -191,14 +192,14 @@ public class WebsocketTransport extends HttpClientTransport {
 			}
 		};
 
-		if (isSsl) {
-			SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-			try {
-				mWebSocketClient.setSocket(factory.createSocket());
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}
+    try {
+      List<Proxy> proxies = ProxySelector.getDefault().select(new URI(connection.getUrl()));
+      Proxy proxy = proxies.isEmpty() ? Proxy.NO_PROXY : proxies.get(0);
+      mWebSocketClient.setProxy(proxy);
+    } catch (URISyntaxException e) {
+      log(e);
+      e.printStackTrace();
+    }
 
 		mWebSocketClient.connect();
 
