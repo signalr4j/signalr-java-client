@@ -21,9 +21,9 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -84,8 +84,6 @@ public class WebsocketTransport extends HttpClientTransport {
 		requestParams.put("messageId", connection.getMessageId());
 		requestParams.put("transport", getName());
 
-		boolean isSsl = false;
-
 //      Error on API < 24
 //		String url = requestParams.keySet().stream()
 //				.map(key -> key + "=" + encodeValue(requestParams.get(key)))
@@ -110,10 +108,6 @@ public class WebsocketTransport extends HttpClientTransport {
 
 		if (connection.getQueryString() != null) {
 			url += "&" + connection.getQueryString();
-		}
-
-		if (url.startsWith(SECURE_WEBSOCKET_SCHEME)) {
-			isSsl = true;
 		}
 
 		mConnectionFuture = new UpdateableCancellableFuture<Void>(null);
@@ -191,14 +185,14 @@ public class WebsocketTransport extends HttpClientTransport {
 			}
 		};
 
-		if (isSsl) {
-			SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-			try {
-				mWebSocketClient.setSocket(factory.createSocket());
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}
+    try {
+      List<Proxy> proxies = ProxySelector.getDefault().select(new URI(connection.getUrl()));
+      Proxy proxy = proxies.isEmpty() ? Proxy.NO_PROXY : proxies.get(0);
+      mWebSocketClient.setProxy(proxy);
+    } catch (URISyntaxException e) {
+      log(e);
+      e.printStackTrace();
+    }
 
 		mWebSocketClient.connect();
 
